@@ -7,33 +7,34 @@ import path from "path";
 config({ path: path.resolve(__dirname, ".env") });
 const API_KEY = process.env.WEATHER_API_KEY;
 if (!API_KEY) {
-  console.error("TOKEN NOT FOUND");
+  console.error("TOKEN NOT FOUND\n");
 } else {
-  console.log("TOKEN OK");
+  console.log("TOKEN OK\n");
 }
 
 const BASE_URL = "https://api.openweathermap.org/data/3.0/onecall";
 
 mainTemperature();
 async function mainTemperature() {
-  // このtemp用csvはscraping.csvとは別csvファイルで管理する。
+  // 新temp/forecast用csvはscraping.csvとは別csvで管理する。
   // 今のscraping.csvの構造を変えた時のバグを防ぐため。
   const api_cities = readAllLineAnyOneColCSV("../city_list.csv", 1);
   const csv_cities = target_urls_all.map((line) => line[4]);
   // 今日(深夜2時)
   const now = new Date();
   const year = now.getFullYear();
-  const format_date = formatDateForAPI(now);
-
+  const date_for_api = formatDateForAPI(now);
+  const date_for_csv = formatDateForCSV(now);
+  console.log("temperature: " + now);
   // 順番はscraping.csvと同じ。そうなるようにcity_list.csvを作成する。
-  const date_for_csv = replaceDateFormatForCSV(format_date);
   for (let i = 0; i < api_cities.length; i++) {
-    const avg_temp = await fetchTemperature(api_cities[i], format_date);
-    console.log(api_cities[i], avg_temp);
+    const avg_temp = await fetchTemperature(api_cities[i], date_for_api);
+    const norm_count = getNormCount(i);
+    console.log(`[${norm_count}/47] ${csv_cities[i]} (${api_cities[i]}): ${avg_temp}`);
+    // TODO: temp-csvの2行目だけ読み込んで、nowを編集する
     saveTemperature(year, csv_cities[i], date_for_csv, avg_temp);
   }
 
-  logTemperature(now);
 }
 
 
@@ -90,18 +91,19 @@ function formatDateForAPI(now: Date): string {
   if (date.length === 1) date = "0" + date;
   return `${year}-${month}-${date}`;
 }
-function replaceDateFormatForCSV(date: string): string {
+function formatDateForCSV(now: Date): string {
   // YYYY/M/D (0詰めをしない)
-  let format = date.split("-");
-  if (format[1].startsWith("0")) format[1] = format[1].slice(1);
-  if (format[2].startsWith("0")) format[2] = format[2].slice(1);
-  return format.join("/");
+  return `${now.getFullYear()}/${now.getMonth() + 1}/${now.getDate()}`;
 }
+
 function saveTemperature(year: number, city: string, date: string, temp: number): void {
   const file_name = `temperature_${year}.csv`;
   const temp_path = `../temperature/${city}/${file_name}`;
   appendCSV(temp_path, [date, temp]);
+  // TODO: temp-csvの2行目だけ読み込んで、nowを編集する
 }
-function logTemperature(now: Date): void {
-  appendCSV("../data_saved.log", ["temperature", now.toISOString()]);
+function getNormCount(i: number): string {
+  let norm_count: string = String(i + 1);
+  norm_count = norm_count.length == 1 ? "0" + norm_count : norm_count;
+  return norm_count
 }
