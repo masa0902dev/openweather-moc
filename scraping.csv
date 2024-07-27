@@ -1,0 +1,9 @@
+<処理は全てこの都道府県順に行われる>(for_forecast)url_region,url_state,url_semilast,url_last,prefecture[4], (for_temperature)pr_id,div_title, (for_measured)都道府県名[7]
+1,2,1400,1100,Hokkaido,14,札幌,北海道
+2,7,3410,4100,Miyagi,34,仙台,宮城県
+3,16,4410,13104,Tokyo,44,東京,東京都
+4,18,5410,15100,Niigata,54,新潟,新潟県
+5,26,5110,23100,Aichi,51,名古屋,愛知県
+6,30,6200,27100,Osaka,62,大阪,大阪府
+7,37,6710,34100,Hiroshima,67,広島,広島県
+9,43,8210,40130,Fukuoka,82,福岡,福岡県
