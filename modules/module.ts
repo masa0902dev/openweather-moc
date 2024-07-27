@@ -203,13 +203,7 @@ export function appendCSV(file_path, record) {
       // 引数recordが一次元配列またはintやstringの場合
       csv_content += record + "\n";
     }
-    if (file_exists) {
-      fs.appendFileSync(file_path, csv_content);
-      // console.log("SUCCESS: appended in " + file_path);
-    } else {
-      fs.writeFileSync(file_path, csv_content);
-      // console.log("SUCCESS: created a new file and wrote in " + file_path);
-    }
+    fs.appendFileSync(file_path, csv_content);
   } catch (error) {
     throw new Error("FAILED to append or create or write: " + error);
   }
