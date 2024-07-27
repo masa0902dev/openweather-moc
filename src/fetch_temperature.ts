@@ -67,13 +67,16 @@ async function fetchTemperature(city: string, format_date: string): Promise<numb
 }
 
 async function fetchGeo(city: string): Promise<Geo> {
+  let exception_limit: number = 1;
+  if (city === "Fukushima") exception_limit = 2;
+
   let url: string = "http://api.openweathermap.org/geo/1.0";
-  url = `${url}/direct?q=${city},jp&limit=1&appid=${API_KEY}`;
+  url = `${url}/direct?q=${city},jp&limit=${exception_limit}&appid=${API_KEY}`;
   try {
     const data = await fetch(url);
     const res: any = await data.json();
     // console.log("GEO", res);
-    return res[0];
+    return res[exception_limit - 1];
   } catch (err) {
     console.error(err);
     return { lat: 0, lon: 0 };
