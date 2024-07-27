@@ -2,6 +2,7 @@ import { readAllLineAnyOneColCSV, appendCSV, target_urls_all } from "../modules/
 import fetch from "node-fetch";
 import { config } from "dotenv";
 import path from "path";
+import fs from "fs";
 
 // .envファイルを絶対パスで参照するように変更
 config({ path: path.resolve(__dirname, ".env") });
@@ -25,19 +26,16 @@ async function mainTemperature() {
   const year = now.getFullYear();
   const date_for_api = formatDateForAPI(now);
   const date_for_csv = formatDateForCSV(now);
+
   console.log("temperature: " + now);
   // 順番はscraping.csvと同じ。そうなるようにcity_list.csvを作成する。
   for (let i = 0; i < api_cities.length; i++) {
     const avg_temp = await fetchTemperature(api_cities[i], date_for_api);
+    await saveTemperature(String(now), String(year), csv_cities[i], date_for_csv, avg_temp);
     const norm_count = getNormCount(i);
     console.log(`[${norm_count}/47] ${csv_cities[i]} (${api_cities[i]}): ${avg_temp}`);
-    // TODO: temp-csvの2行目だけ読み込んで、nowを編集する
-    saveTemperature(year, csv_cities[i], date_for_csv, avg_temp);
   }
-
 }
-
-
 
 interface Geo {
   lat: number;
@@ -92,18 +90,42 @@ function formatDateForAPI(now: Date): string {
   return `${year}-${month}-${date}`;
 }
 function formatDateForCSV(now: Date): string {
-  // YYYY/M/D (0詰めをしない)
   return `${now.getFullYear()}/${now.getMonth() + 1}/${now.getDate()}`;
 }
 
-function saveTemperature(year: number, city: string, date: string, temp: number): void {
+async function saveTemperature(
+  now: string,
+  year: string,
+  city: string,
+  date_csv_line: string,
+  temp: number
+): Promise<void> {
   const file_name = `temperature_${year}.csv`;
   const temp_path = `../temperature/${city}/${file_name}`;
-  appendCSV(temp_path, [date, temp]);
-  // TODO: temp-csvの2行目だけ読み込んで、nowを編集する
+  appendCSV(temp_path, [date_csv_line, temp]);
+
+  // temp-csvを全て読み込んで、二行目だけ編集する。
+  const targetLineNumber = 1; // 2行目はインデックス1
+  const editRow = (line: string) => {
+    const columns = line.split(",");
+    columns[0] = String(now);
+    return columns.join(",");
+  };
+  const abs_temp_path = path.resolve(__dirname, temp_path); // Actions用
+  try {
+    const data = await fs.promises.readFile(abs_temp_path, "utf8");
+    const lines = data.split("\n");
+    if (lines.length > targetLineNumber) {
+      lines[targetLineNumber] = editRow(lines[targetLineNumber]);
+    }
+    const newData = lines.join("\n");
+    await fs.promises.writeFile(abs_temp_path, newData, "utf8");
+  } catch (err) {
+    console.error(err);
+  }
 }
 function getNormCount(i: number): string {
   let norm_count: string = String(i + 1);
   norm_count = norm_count.length == 1 ? "0" + norm_count : norm_count;
-  return norm_count
+  return norm_count;
 }
